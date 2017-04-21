@@ -1,0 +1,282 @@
+<html><head></head><body><div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a href="https://github.com/anywhichway/rule-reactorl#readme">rule-reactor (v0.1.10)</a>
+</h1>
+<h4>A light weight, fast, expressive forward chaining business rule engine leveraging JavaScript internals, lazy cross-products, and Functions as objects rather than Rete.</h4>
+<div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.rule-reactor">module rule-reactor</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.rule-reactor.rule-reactor">
+            function <span class="apidocSignatureSpan"></span>rule-reactor
+            <span class="apidocSignatureSpan">(domain, boost)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.rule-reactor.exists">
+            function <span class="apidocSignatureSpan">rule-reactor.</span>exists
+            <span class="apidocSignatureSpan">(domain, test)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.rule-reactor.forAll">
+            function <span class="apidocSignatureSpan">rule-reactor.</span>forAll
+            <span class="apidocSignatureSpan">(domain, test)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.rule-reactor.not">
+            function <span class="apidocSignatureSpan">rule-reactor.</span>not
+            <span class="apidocSignatureSpan">(value)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.rule-reactor" id="apidoc.module.rule-reactor">module rule-reactor</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.rule-reactor.rule-reactor" id="apidoc.element.rule-reactor.rule-reactor">
+        function <span class="apidocSignatureSpan"></span>rule-reactor
+        <span class="apidocSignatureSpan">(domain, boost)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function RuleReactor(domain, boost) {
+		this.boost = boost;
+		this.rules = {};
+		this.triggerlessRules = {};
+		this.data = new Map();
+		this.agenda = [];
+		this.run.assertions = 0;
+		this.run.modifications = 0;
+		this.run.executions = 0;
+		this.domain = (domain ? domain : {});
+	}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.rule-reactor.exists" id="apidoc.element.rule-reactor.exists">
+        function <span class="apidocSignatureSpan">rule-reactor.</span>exists
+        <span class="apidocSignatureSpan">(domain, test)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function exists(domain, test) {
+		if(typeof(domain)!=="object") {
+			throw new TypeError("Domain " + domain + " is not an object in existential quantification");
+		}
+		var variables = Object.keys(domain);
+		if(typeof(test)==="object") {
+			if(!test) {
+				throw new TypeError("Existential quantification condition is null");
+			}
+			return Object.keys(test).every(function(variable) {
+				var i = variables.indexOf(variable);
+				if(i===-1) {
+					throw new ReferenceError("Undeclared domain variable '" + variable + "' in existential quantification match condition");
+				}
+				return matchObject(domain[variable].index,test[variable]);
+			});
+		}
+		if((test+"").indexOf("return ")===-1) {
+			throw new TypeError("Existential quantification condition function missing a return statement: " + test);
+		}
+		if(!test.cxproduct) {
+			var collections = [], args;
+			variables.forEach(function(variable) {
+				// fixes issue #21
+				if ( !domain[variable].hasOwnProperty('instances') ) domain[variable].instances = [];
+				if ( !domain[variable].hasOwnProperty('index') ) domain[variable].index = {};
+				//domain[variable].instances = (domain[variable].instances ? domain[variable].instances: []);
+				collections.push(domain[variable].instances);
+			});
+			test.cxproduct = new CXProduct(collections);
+			args = getFunctionArgs(test);
+			if(args.length&gt;0) {
+				test.required = args.map(function(variable) {
+					var i = variables.indexOf(variable);
+					if(i===-1) {
+						throw new ReferenceError("Undeclared domain variable '" + variable + "' in existential quantification condition function");
+					}
+					return i;
+				});
+			}
+		}
+		return test.cxproduct.some(function(row) {
+			var args = [];
+			if(!test.required || test.required.every(function(index) { args.push(row[index]); return typeof(row[index])!=="undefined"; })) {
+				return test.apply(null,args);
+			}
+		});
+	}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+Rules can check to see if a condition is true at least once across all possible combinations of a domain and fire just once rather
+ than for each possible combination, e.g.
+
+```
+reactor.declare("Person",Person); // this line required for Node.js
+reactor.createRule("homeless",0,{},
+	function() {
+		return reactor.<span class="apidocCodeKeywordSpan">exists</span>({person: Person},function(person) { return person.home==null; });
+	},
+	function() {
+		console.log("There are homeless people.");
+	});
+```
+Note that existential quantification required its own domain specification. Also note that the rule above is domainless.
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.rule-reactor.forAll" id="apidoc.element.rule-reactor.forAll">
+        function <span class="apidocSignatureSpan">rule-reactor.</span>forAll
+        <span class="apidocSignatureSpan">(domain, test)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function forAll(domain, test) {
+		if(typeof(domain)!=="object") {
+			throw new TypeError("Domain " + domain + " is not an object in universal quantification");
+		}
+		var variables = Object.keys(domain);
+		if(typeof(test)==="object") {
+			if(!test) {
+				throw new TypeError("Universal quantification condition is null");
+			}
+			return Object.keys(test).every(function(variable) {
+				var i = variables.indexOf(variable);
+				if(i===-1) {
+					throw new ReferenceError("Undeclared domain variable '" + variable + "' in existential quantification match condition");
+				}
+				return !notMatchObject(domain[variable].index,test[variable]);
+			});
+		}
+		if((test+"").indexOf("return ")===-1) {
+			throw new TypeError("Universal quantification condition function missing a return statement: " + test);
+		}
+		if(!test.cxproduct) {
+			var collections = [], args;
+			variables.forEach(function(variable) {
+				// fixes issue #21
+				if ( !domain[variable].hasOwnProperty('instances') ) domain[variable].instances = [];
+				if ( !domain[variable].hasOwnProperty('index') ) domain[variable].index = {};
+				//domain[variable].instances = (domain[variable].instances ? domain[variable].instances: []);
+				collections.push(domain[variable].instances);
+			});
+			test.cxproduct = new CXProduct(collections);
+			args = getFunctionArgs(test);
+			if(args.length&gt;0) {
+				test.required = args.map(function(variable) {
+					var i = variables.indexOf(variable);
+					if(i===-1) {
+						throw new ReferenceError("Undeclared domain variable '" + variable + "' in universal quantification condition function");
+					}
+					return i;
+				});
+			}
+		}
+		return test.cxproduct.every(function(row) {
+			var args = [];
+			if(!test.required || test.required.every(function(index) { args.push(row[index]); return typeof(row[index])!=="undefined"; })) {
+				return test.apply(null,args);
+			}
+		});
+	}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.rule-reactor.not" id="apidoc.element.rule-reactor.not">
+        function <span class="apidocSignatureSpan">rule-reactor.</span>not
+        <span class="apidocSignatureSpan">(value)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function not(value) {
+		return !value;
+	}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
+</body></html>
